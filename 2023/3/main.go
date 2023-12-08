@@ -4,7 +4,6 @@ import (
 	"bufio"
 	_ "embed"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 )
@@ -21,18 +20,24 @@ func main() {
 
 	r := bufio.NewReader(f)
 
+	var i int
 	for {
-		line, err := r.ReadBytes('\n')
+		line, _ := r.ReadBytes('\n')
 
-		if err == io.EOF || len(line) == 0 {
+		if len(line) == 0 {
 			break
 		}
 
 		g.addLine(line[:len(line)-1])
+		i++
 	}
 
-	var sum int
+	part2(g)
+}
 
+func part1(g *grid) {
+	var sum int
+	
 	for i, l := range g.lines {
 		for j, it := range l.contents {
 			n, ok := it.(number)
@@ -109,8 +114,78 @@ func main() {
 	fmt.Println("Sum:", sum)
 }
 
+func part2(g *grid) {
+	var sum int
+	for i, l := range g.lines {
+		for _, it := range l.contents {
+			s, ok := it.(symbol);
+			if !ok || it.Value() != "*" {
+				continue
+			}
+
+			items := g.ItemsSurrounding(i, s.point)
+			if len(items) == 2 {
+				mul := 1
+				for i := range items {
+					n, _ := strconv.Atoi(items[i].Value())
+					
+					mul *= n
+				}
+
+				sum += mul
+			}
+		}
+	}
+
+	fmt.Println("Sum:", sum)
+}
+
 type grid struct {
 	lines []gridLine
+}
+
+func (g grid) ItemsSurrounding(x,y int) []gridItem {
+	var items []gridItem
+	for _, it := range g.lines[x].contents {
+		if _, ok := it.(number); !ok {
+			continue
+		}
+		c := it.Coordinates()
+		if c[0] -1 <= y && c[1] + 1 >= y {
+			items = append(items, it)
+		}
+	}
+	if x > 0 {
+		prevLine := g.lines[x-1]
+
+		for _, plit := range prevLine.contents {
+			if _, ok := plit.(number); ok {
+				c := plit.Coordinates()
+
+				if c[0] - 1 <= y && c[1] + 1 >= y {
+					items = append(items, plit)
+				}
+			}
+		}
+	}
+
+	if x < len(g.lines) - 1 {
+		nextLine := g.lines[x+1]
+
+		
+		for _, nlit := range nextLine.contents {
+
+			if _, ok := nlit.(number); ok {
+				c := nlit.Coordinates()
+
+				if c[0] - 1 <= y && c[1] + 1 >= y {
+					items = append(items, nlit)
+				}
+			}
+		}
+	}
+
+	return items
 }
 
 func (g *grid) addLine(bs []byte) {
