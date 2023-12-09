@@ -6,8 +6,14 @@ import (
 	"io"
 	"math"
 	"os"
+	"slices"
 	"strconv"
 )
+
+type stackitem struct {
+	idx      int
+	original bool
+}
 
 func main() {
 	f, err := os.Open("inputs.txt")
@@ -15,9 +21,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	r := bufio.NewReader(f)
 
-	var total int
+	r := bufio.NewReader(f)
+	var games []game
+
 	for {
 		bs, err := r.ReadBytes('\n')
 		if len(bs) == 0 {
@@ -28,44 +35,67 @@ func main() {
 			panic(err)
 		}
 
-		g := newGame(bs)
-		total += g.Score()
+		games = append(games, newGame(bs))
 	}
-	fmt.Println("score", total)
+
+	var total int
+	copies := make(map[int]int)
+
+	for i := 0; i < len(games); i++ {
+		copies[i]++
+		total += copies[i]
+
+		m := games[i].Matches()
+		fmt.Printf("game: %v\tmatches: %v\tcard count: %v\t\ttotal: %v\n", i, m, copies[i], total)
+
+		if m == 0 {
+			continue
+		}
+
+		for j := 1; j <= m; j++ {
+			copies[i+j] += copies[i]
+		}
+	}
+
+	fmt.Println("Total", total)
 }
 
 type game struct {
-	number int
-	winning []int
+	number     string
+	winning    []int
 	candidates []int
+	matches    int
+}
+
+func (g game) Matches() int {
+	var matches int
+
+	for i := range g.winning {
+		if slices.Contains(g.candidates, g.winning[i]) {
+			matches++
+		}
+	}
+
+	return matches
 }
 
 func (g game) Score() int {
-	var matches int
-
-	for i := range g.candidates {
-		for j := range g.winning {
-			if g.candidates[i] == g.winning[j] {
-				matches++
-			}
-		}
-	}
-	if matches == 0 {
+	m := g.Matches()
+	if m == 0 {
 		return 0
 	}
-	return int(math.Pow(float64(2), float64(matches - 1)))
+	return int(math.Pow(float64(2), float64(m-1)))
 }
 
 func newGame(bs []byte) game {
 	var (
 		numberFound, winningFound bool
-		number int
-		winning, candidates []int
+		number                    string
+		winning, candidates       []int
 	)
 
 	var i int
 	for i < len(bs) {
-
 		if isNumber(bs[i]) {
 			if !numberFound {
 				var ns []byte
@@ -75,8 +105,8 @@ func newGame(bs []byte) game {
 					func(b byte) { ns = append(ns, b) },
 					i,
 				)
-				
-				number, _ = strconv.Atoi(string(ns))
+
+				number = string(ns)
 				i = j
 				numberFound = true
 			} else if !winningFound {
@@ -84,7 +114,7 @@ func newGame(bs []byte) game {
 
 				j := iterateWhile(
 					bs,
-					func(b byte)  bool { return b != 124 },
+					func(b byte) bool { return b != 124 },
 					func(b byte) {
 						if b != 32 {
 							cur = append(cur, b)
@@ -106,7 +136,7 @@ func newGame(bs []byte) game {
 				var cur []byte
 				j := iterateWhile(
 					bs,
-					func(b byte)  bool { return b != 10 },
+					func(b byte) bool { return b != 10 },
 					func(b byte) {
 						if b != 32 {
 							cur = append(cur, b)
@@ -134,9 +164,10 @@ func newGame(bs []byte) game {
 		i++
 	}
 	return game{
-		number: number,
-		winning: winning,
+		number:     number,
+		winning:    winning,
 		candidates: candidates,
+		matches:    -1,
 	}
 }
 
