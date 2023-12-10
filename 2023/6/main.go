@@ -10,14 +10,14 @@ import (
 )
 
 func main() {
-	f, err := os.Open("inputs.txt")
+	f, err := os.Open("testinputs.txt")
 	if err != nil {
 		panic(err)
 	}
 
 	var (
-		times []int
-		dists []int
+		time int
+		dist int
 	)
 
 	r := bufio.NewReader(f)
@@ -34,33 +34,29 @@ func main() {
 		fmt.Println(l)
 		p := strings.Fields(string(l))
 		if p[0] == "Time:" {
+			var bs []byte
 			for i := 1; i < len(p); i++ {
-				n, _ := strconv.Atoi(p[i])
-				times = append(times,n) 
+				bs = append(bs,[]byte(p[i])...)
 			}
+			time, _ = strconv.Atoi(string(bs))
 		} else {
+			var bs []byte
 			for i := 1; i < len(p); i++ {
-				n, _ := strconv.Atoi(p[i])
-				dists = append(dists,n) 
+				bs = append(bs,[]byte(p[i])...)
 			}
+			dist, _ = strconv.Atoi(string(bs))
 		}
 	}
 
-	res := 1
-	for i := range times {
-		t,d := times[i], dists[i]
+	var c int
+	for j := 1; j < time; j++ {
+		r := time - j
 
-		var c int
-		for j := 1; j < t; j++ {
-			r := t - j
-
-			if (r * j) > d {
-				c++
-			}
+		if (r * j) > dist {
+			c++
 		}
-		res *= c
 	}
 
-	fmt.Println("result", res)
+	fmt.Println("result", c)
 }
 
