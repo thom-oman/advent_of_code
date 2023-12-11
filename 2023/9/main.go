@@ -24,12 +24,18 @@ func main() {
 func predict(bls []int) int {
 	diffs := buildDiffs(bls)
 
-	var j int
-	for i := len(diffs) - 1; i >= 0; i-- {
-		d := diffs[i]
-		j += diffs[i][len(d)-1]
+	// Part 1
+	// var j int
+	// for i := len(diffs) - 1; i >= 0; i-- {
+	// 	d := diffs[i]
+	// 	j += diffs[i][len(d)-1]
+	// }
+
+	nvals := []int{0}
+	for i := len(diffs) - 1; i > 0; i-- {
+		nvals = append(nvals, diffs[i-1][0] - nvals[len(nvals)-1])
 	}
-	return j
+	return nvals[len(nvals) - 1]
 }
 
 func buildDiffs(bls []int) [][]int {
